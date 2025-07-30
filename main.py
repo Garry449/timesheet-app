@@ -4,8 +4,10 @@ import os
 # Use cloud database if DATABASE_URL is set (production/cloud), otherwise use local db
 if os.environ.get('DATABASE_URL'):
     import db_cloud as db
+    print("Using cloud database (PostgreSQL)")
 else:
-    import db
+    import db_local as db
+    print("Using local database (SQL Server)")
 
 from datetime import datetime, timedelta
 import calendar
