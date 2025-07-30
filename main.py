@@ -6,8 +6,13 @@ if os.environ.get('DATABASE_URL'):
     import db_cloud as db
     print("Using cloud database (PostgreSQL)")
 else:
-    import db_local as db
-    print("Using local database (SQL Server)")
+    try:
+        import db_local as db
+        print("Using local database (SQL Server)")
+    except ImportError:
+        # Fallback to cloud database if local db is not available
+        import db_cloud as db
+        print("Local database not available, using cloud database (PostgreSQL)")
 
 from datetime import datetime, timedelta
 import calendar

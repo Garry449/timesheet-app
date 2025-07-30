@@ -5,4 +5,4 @@ Flask-Mail==0.9.1
 psycopg2-binary==2.9.7
 gunicorn==21.2.0
 python-dotenv==1.0.0
-# Note: pyodbc is only needed for local SQL Server development 
+pyodbc==4.0.39 
