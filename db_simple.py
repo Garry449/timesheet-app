@@ -1,20 +1,20 @@
 """
 Simplified database adapter for cloud deployment
-Uses basic PostgreSQL connection without complex dependencies
+Uses pure Python PostgreSQL adapter (pg8000) for better compatibility
 """
 
 import os
-import psycopg2
+import pg8000
 from datetime import datetime, timedelta
 
 def get_connection():
     """Get database connection"""
     database_url = os.environ.get('DATABASE_URL')
     if database_url:
-        return psycopg2.connect(database_url)
+        return pg8000.connect(database_url)
     else:
         # Fallback for local testing
-        return psycopg2.connect(
+        return pg8000.connect(
             host='localhost',
             database='timesheet',
             user='postgres',

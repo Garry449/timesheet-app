@@ -5,8 +5,7 @@ Run this once after setting up your PostgreSQL database
 """
 
 import os
-import psycopg2
-from psycopg2 import sql
+import pg8000
 
 def setup_database():
     """Create tables and insert initial data for cloud deployment"""
@@ -19,7 +18,7 @@ def setup_database():
     
     try:
         # Connect to database
-        conn = psycopg2.connect(database_url)
+        conn = pg8000.connect(database_url)
         cursor = conn.cursor()
         
         # Create tables
