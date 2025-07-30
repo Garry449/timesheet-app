@@ -1,5 +1,12 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
-import db
+import os
+
+# Use cloud database if DATABASE_URL is set (production/cloud), otherwise use local db
+if os.environ.get('DATABASE_URL'):
+    import db_cloud as db
+else:
+    import db
+
 from datetime import datetime, timedelta
 import calendar
 from flask_login import LoginManager, login_user, logout_user, login_required, UserMixin, current_user
