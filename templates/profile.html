@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Profile - Timesheet System</title>
+    <link href="https://fonts.googleapis.com/css?family=Roboto:400,500,600,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+<body>
+    <div class="main-container">
+        <!-- Header Section -->
+        <div class="header-section">
+            <div class="header-content">
+                <div class="logo">
+                    <img src="{{ url_for('static', filename='images/nalashaa-logo.png') }}" alt="Nalashaa Logo">
+                </div>
+                <div class="header-actions">
+                    <a href="{{ url_for('dashboard') }}" class="btn-secondary">Dashboard</a>
+                    <a href="{{ url_for('fill_timesheet') }}" class="btn-secondary">Timesheet</a>
+                    <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content Section -->
+        <div class="content-section">
+            <div style="text-align: left; margin-bottom: 2rem;">
+                <h1 style="font-size: 2rem; font-weight: 700; color: #2d3748; margin-bottom: 0.25rem;">User Profile</h1>
+                <div style="font-size: 1rem; color: #4a5568; font-weight: 400;">Manage your account information and password</div>
+            </div>
+            <div class="profile-container">
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="flash-message {{ category }}">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <!-- User Information -->
+                <div class="user-info">
+                    <div class="info-row">
+                        <span class="info-label">Username:</span>
+                        <span class="info-value">{{ user.username }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Role:</span>
+                        <span class="info-value">{{ user.role.title() }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">User ID:</span>
+                        <span class="info-value">{{ user.id }}</span>
+                    </div>
+                </div>
+
+                <!-- Change Password Form -->
+                <div class="password-form">
+                    <h3>Change Password</h3>
+                    <form method="POST" action="{{ url_for('profile') }}">
+                        <div class="form-group">
+                            <label for="current_password">Current Password</label>
+                            <input type="password" id="current_password" name="current_password" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="new_password">New Password</label>
+                            <input type="password" id="new_password" name="new_password" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="confirm_password">Confirm New Password</label>
+                            <input type="password" id="confirm_password" name="confirm_password" required>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn-primary">Update Password</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Password validation
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.querySelector('form');
+            const newPassword = document.getElementById('new_password');
+            const confirmPassword = document.getElementById('confirm_password');
+            const submitBtn = document.querySelector('button[type="submit"]');
+            
+            function validatePasswords() {
+                const newPass = newPassword.value;
+                const confirmPass = confirmPassword.value;
+                
+                // Clear previous error styling
+                newPassword.style.borderColor = '#e2e8f0';
+                confirmPassword.style.borderColor = '#e2e8f0';
+                
+                let isValid = true;
+                
+                // Check password length
+                if (newPass.length > 0 && newPass.length < 6) {
+                    newPassword.style.borderColor = '#e53e3e';
+                    isValid = false;
+                }
+                
+                // Check if passwords match
+                if (newPass && confirmPass && newPass !== confirmPass) {
+                    confirmPassword.style.borderColor = '#e53e3e';
+                    isValid = false;
+                }
+                
+                // Enable/disable submit button
+                submitBtn.disabled = !isValid;
+                submitBtn.style.opacity = isValid ? '1' : '0.6';
+                
+                return isValid;
+            }
+            
+            // Add event listeners
+            newPassword.addEventListener('input', validatePasswords);
+            confirmPassword.addEventListener('input', validatePasswords);
+            
+            // Form submission
+            form.addEventListener('submit', function(e) {
+                if (!validatePasswords()) {
+                    e.preventDefault();
+                    alert('Please fix the password validation errors before submitting.');
+                }
+            });
+            
+            // Initial validation
+            validatePasswords();
+        });
+    </script>
+</body>
+</html> 

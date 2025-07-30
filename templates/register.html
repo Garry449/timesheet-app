@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Register - Nalashaa Timesheet</title>
+    <link href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+  </head>
+  <body>
+    <div class="container">
+      <div class="logo">
+        <img src="{{ url_for('static', filename='images/nalashaa-logo.png') }}" alt="Nalashaa Logo">
+      </div>
+      
+      <h2>Register</h2>
+      
+      {% with messages = get_flashed_messages() %}
+        {% if messages %}
+          <div class="success">{{ messages[0] }}</div>
+        {% endif %}
+      {% endwith %}
+      
+      <form method="post" autocomplete="off">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" required placeholder="Choose a username">
+        
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" required placeholder="Create a password">
+        
+        <label for="role">Role</label>
+        <select id="role" name="role" required>
+          <option value="employee">Employee</option>
+          <option value="manager">Project Manager</option>
+        </select>
+        
+        <button type="submit">Register</button>
+      </form>
+      
+      <div style="text-align:center; margin-top:1.5rem;">
+        <a href="{{ url_for('login') }}">Already have an account? Login</a>
+      </div>
+    </div>
+    
+    <div class="footer">
+      &copy; {{ year }} <a href="https://www.nalashaa.com/" target="_blank">Nalashaa</a> | Contact: info@nalashaa.com
+    </div>
+  </body>
+</html> 

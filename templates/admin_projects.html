@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Admin - Project Management</title>
+    <link href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <style>
+      .admin-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2em;
+      }
+      .admin-nav {
+        display: flex;
+        gap: 1em;
+      }
+      .admin-nav a {
+        background: #005eeb;
+        color: #fff;
+        padding: 0.5em 1em;
+        border-radius: 6px;
+        text-decoration: none;
+        font-size: 0.9em;
+      }
+      .admin-nav a:hover {
+        background: #003e99;
+      }
+      .user-list {
+        max-height: 300px;
+        overflow-y: auto;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 1em;
+        margin-top: 1em;
+      }
+      .user-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 0.5em;
+      }
+      .user-item input[type="checkbox"] {
+        margin-right: 0.5em;
+      }
+      .user-item label {
+        margin: 0;
+        font-size: 0.9em;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="admin-header">
+        <div class="logo">
+          <img src="{{ url_for('static', filename='images/nalashaa-logo.png') }}" alt="Nalashaa Logo">
+        </div>
+        <div class="admin-nav">
+          <a href="{{ url_for('admin_dashboard') }}">Dashboard</a>
+          <a href="{{ url_for('admin_users') }}">Users</a>
+          <a href="{{ url_for('admin_project_list') }}">Project List</a>
+          <a href="{{ url_for('fill_timesheet') }}">Timesheet</a>
+          <a href="{{ url_for('profile') }}">Profile</a>
+          <a href="{{ url_for('logout') }}">Logout</a>
+        </div>
+      </div>
+      
+      <div style="text-align: left; margin-bottom: 2rem;">
+          <h2 style="font-size: 2rem; font-weight: 700; color: #2d3748; margin-bottom: 0.25rem;">Create New Project</h2>
+          <div style="font-size: 1rem; color: #4a5568; font-weight: 400;">Add a new project and assign users to it</div>
+      </div>
+      
+      {% with messages = get_flashed_messages() %}
+        {% if messages %}
+          <div class="success">{{ messages[0] }}</div>
+        {% endif %}
+      {% endwith %}
+      
+      <form method="post" autocomplete="off">
+        <label for="name">Project Name</label>
+        <input type="text" id="name" name="name" required placeholder="Enter project name">
+        
+        <label for="start_date">Start Date</label>
+        <input type="date" id="start_date" name="start_date" required>
+        
+        <label for="end_date">End Date</label>
+        <input type="date" id="end_date" name="end_date" required>
+        
+        <label>Assign Users to Project</label>
+        <div class="user-list">
+          {% for user in users %}
+            <div class="user-item">
+              <input type="checkbox" id="user_{{ user[0] }}" name="users" value="{{ user[0] }}">
+              <label for="user_{{ user[0] }}">{{ user[1] }} ({{ user[2] }})</label>
+            </div>
+          {% endfor %}
+        </div>
+        
+        <button type="submit">Create Project</button>
+      </form>
+    </div>
+    <div class="footer">
+      &copy; {{ year }} <a href="https://www.nalashaa.com/" target="_blank">Nalashaa</a> | Contact: info@nalashaa.com
+    </div>
+  </body>
+</html> 

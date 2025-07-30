@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monthly Timesheet - Nalashaa</title>
+    <link href="https://fonts.googleapis.com/css?family=Roboto:400,500,600,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+<body>
+
+    <div class="main-container">
+        <!-- Header Section -->
+        <div class="header-section">
+            <div class="header-content">
+                <div class="logo">
+                    <img src="{{ url_for('static', filename='images/nalashaa-logo.png') }}" alt="Nalashaa Logo">
+                </div>
+                <div class="header-actions">
+                    <a href="{{ url_for('dashboard') }}" class="btn-secondary">Dashboard</a>
+                    <a href="{{ url_for('profile') }}" class="btn-secondary">Profile</a>
+                    <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content Section -->
+        <div class="content-section">
+            <div class="timesheet-header">
+                <div style="text-align: left;">
+                    <h1 style="font-size: 2rem; font-weight: 700; color: #2d3748; margin: 0;">Monthly Timesheet</h1>
+                </div>
+                
+                <!-- Voice Input Section -->
+                <div class="voice-input-section">
+                    <button type="button" id="quick-voice-btn" class="quick-voice-btn" title="Quick Voice Entry" onclick="startQuickVoiceEntry()">
+                        <span class="voice-icon">🎤</span>
+                        <span class="voice-text">Quick Voice Entry</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Notification Container -->
+            <div id="notification-container" class="notification-container">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="notification {{ category }}">
+                                <div class="notification-content">{{ message }}</div>
+                                <button class="notification-close" onclick="this.parentElement.remove()">&times;</button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+            </div>
+
+            <!-- Timesheet Container -->
+            <div class="timesheet-container">
+                <!-- Timesheet Header -->
+                <div class="timesheet-header">
+                    <!-- View Toggle -->
+                    <div class="view-toggle">
+                        <a href="{{ url_for('fill_timesheet', view='daily') }}" class="view-btn">Daily</a>
+                        <a href="{{ url_for('fill_timesheet', view='weekly') }}" class="view-btn">Weekly</a>
+                        <a href="{{ url_for('fill_timesheet', view='monthly') }}" class="view-btn active">Monthly</a>
+                    </div>
+
+                    <!-- Month Navigation -->
+                    <div class="month-navigation">
+                        <form method="POST" action="{{ url_for('change_date') }}" style="display: inline;">
+                            <input type="hidden" name="view_type" value="monthly">
+                            <input type="hidden" name="direction" value="prev">
+                            <input type="hidden" name="current_date" value="{{ month_start.strftime('%Y-%m-%d') }}">
+                            <button type="submit" class="month-nav-btn">Previous Month</button>
+                        </form>
+                        
+                        <div class="month-display">
+                            <span>{{ month_start.strftime('%B %Y') }}</span>
+                        </div>
+                        
+                        <form method="POST" action="{{ url_for('change_date') }}" style="display: inline;">
+                            <input type="hidden" name="view_type" value="monthly">
+                            <input type="hidden" name="direction" value="next">
+                            <input type="hidden" name="current_date" value="{{ month_start.strftime('%Y-%m-%d') }}">
+                            <button type="submit" class="month-nav-btn">Next Month</button>
+                        </form>
+                        
+                        <button type="button" class="date-jump-btn" onclick="jumpToToday()">Today</button>
+                    </div>
+                </div>
+
+                <!-- Calendar Container -->
+                <div class="calendar-container">
+                    <div class="calendar-grid monthly-grid">
+                        {% for date in month_dates %}
+                        <div class="calendar-day">
+                            <div class="day-header">
+                                <div class="day-name">{{ date.strftime('%a') }}</div>
+                                <div class="day-date">{{ date.strftime('%d') }}</div>
+                                <div class="day-total" id="total-{{ date.strftime('%Y-%m-%d') }}">0h</div>
+                            </div>
+                            
+                            <div class="day-entries" id="entries-{{ date.strftime('%Y-%m-%d') }}">
+                                {% for entry in existing_entries %}
+                                    {% if entry[1].strftime('%Y-%m-%d') == date.strftime('%Y-%m-%d') %}
+                                    <div class="entry-item" data-entry-id="{{ entry[0] }}">
+                                        <div class="entry-header">
+                                            <span class="entry-project">{{ entry[2] }}</span>
+                                            <span class="entry-hours">{{ entry[4] }}h</span>
+                                            <div class="entry-actions">
+                                                <button class="entry-edit-btn" onclick="editEntry(this)" title="Edit Entry">✏️</button>
+                                                <button class="entry-delete-btn" onclick="deleteEntry(this)" title="Delete Entry">🗑️</button>
+                                            </div>
+                                        </div>
+                                        <div class="entry-task">{{ entry[3] }} - {{ entry[5] or 'No description' }}</div>
+                                    </div>
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                <!-- Show if no entries for this day -->
+                                <div class="no-entries" style="display: none;">No entries for this day</div>
+                            </div>
+                            
+                            <div class="day-actions">
+                                <button class="add-entry-btn" onclick="addEntry('{{ date.strftime('%Y-%m-%d') }}')">
+                                    + Add Entry
+                                </button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <!-- Monthly Summary -->
+                <div class="month-summary">
+                    <div class="summary-item">
+                        <span class="summary-label">Total Hours:</span>
+                        <span class="summary-value" id="total-hours">{{ "%.1f"|format(month_total) }}</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Daily Average:</span>
+                        <span class="summary-value" id="daily-average">{{ "%.1f"|format(month_total/(month_dates|length) if month_total > 0 else 0) }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Entry Modal -->
+    <div id="entry-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h3 id="modal-title">Add Entry</h3>
+                    <div id="modal-date" style="font-size: 0.875rem; color: #4a5568; margin-top: 0.25rem; font-weight: 500;"></div>
+                </div>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="entry-form">
+                    <input type="hidden" id="entry-date" name="date">
+                    <input type="hidden" id="entry-id" name="entry_id">
+                    
+                    <div class="form-group">
+                        <label for="entry-project">Project <span style="color: #e53e3e;">*</span></label>
+                        <select id="entry-project" name="project_id" required>
+                            <option value="">Select Project</option>
+                            {% for project in projects %}
+                                <option value="{{ project[0] }}">{{ project[1] }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="entry-task">Task Category <span style="color: #e53e3e;">*</span></label>
+                        <select id="entry-task" name="task_id" required>
+                            <option value="">Select Task</option>
+                            {% for category in task_categories %}
+                                <option value="{{ category[0] }}">{{ category[1] }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="entry-hours">Hours <span style="color: #e53e3e;">*</span></label>
+                        <input type="number" id="entry-hours" name="hours" step="0.5" min="0" max="24" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="entry-description">Description <span style="color: #e53e3e;">*</span></label>
+                        <div style="position: relative;">
+                            <textarea id="entry-description" name="description" rows="3" placeholder="What did you work on?" required></textarea>
+                            <button type="button" id="voice-input-btn" class="voice-btn" title="Voice Input" onclick="startVoiceInput()">
+                                🎤
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" onclick="closeModal()">Cancel</button>
+                        <button type="submit" class="btn-primary">Save Entry</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <div class="loading-text" id="loading-text">Saving entry...</div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Voice Modal -->
+    <div id="quick-voice-modal" class="quick-voice-modal">
+        <div class="quick-voice-content">
+            <div class="quick-voice-title">Quick Voice Entry</div>
+            <div class="quick-voice-subtitle">Fill in the details and speak your work description for today</div>
+            
+            <div class="quick-voice-date" id="quick-voice-date">
+                <!-- Today's date will be populated here -->
+            </div>
+            
+            <div class="quick-voice-status" id="quick-voice-status">
+                Click "Start Recording" to begin
+            </div>
+            
+            <div class="quick-voice-form">
+                <div class="form-group">
+                    <label for="quick-project">Project <span style="color: #e53e3e;">*</span></label>
+                    <select id="quick-project" required>
+                        <option value="">Select Project</option>
+                        {% for project in projects %}
+                        <option value="{{ project[0] }}">{{ project[1] }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="quick-task">Task Category <span style="color: #e53e3e;">*</span></label>
+                    <select id="quick-task" required>
+                        <option value="">Select Task Category</option>
+                        {% for category in task_categories %}
+                        <option value="{{ category[0] }}">{{ category[1] }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="quick-hours">Hours <span style="color: #e53e3e;">*</span></label>
+                    <input type="number" id="quick-hours" step="0.25" min="0.25" max="24" value="1.0" required>
+                </div>
+            </div>
+            
+            <div class="quick-voice-transcript" id="quick-voice-transcript">
+                Your voice input will appear here...
+            </div>
+            
+            <div class="quick-voice-actions">
+                <button type="button" class="quick-voice-btn-large secondary" onclick="closeQuickVoiceModal()">Cancel</button>
+                <button type="button" class="quick-voice-btn-large" id="record-btn" onclick="toggleQuickVoiceRecording()">Start Recording</button>
+                <button type="button" class="quick-voice-btn-large" id="save-btn" onclick="saveQuickVoiceEntry()" style="display: none;">Save Entry</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/timesheet.js') }}"></script>
+</body>
+</html> 
