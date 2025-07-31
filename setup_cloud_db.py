@@ -16,6 +16,7 @@ def setup_database():
         print("DATABASE_URL not found in environment variables")
         return False
     
+    conn = None
     try:
         # Connect to database
         conn = pg8000.connect(database_url)
@@ -125,7 +126,8 @@ def setup_database():
         
     except Exception as e:
         print(f"Error setting up database: {e}")
-        conn.rollback()
+        if conn:
+            conn.rollback()
         return False
     finally:
         if conn:
