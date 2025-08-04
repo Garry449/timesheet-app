@@ -188,11 +188,14 @@
                     
                     <div class="form-group">
                         <label for="entry-description">Description <span style="color: #e53e3e;">*</span></label>
-                        <div style="position: relative;">
-                            <textarea id="entry-description" name="description" rows="3" placeholder="What did you work on?" required></textarea>
-                            <button type="button" id="voice-input-btn" class="voice-btn" title="Voice Input" onclick="startVoiceInput()">
-                                🎤
-                            </button>
+                        <div class="voice-input-container">
+                            <textarea id="entry-description" name="description" rows="3" placeholder="Type or speak your work description..." required></textarea>
+                            <div class="voice-controls">
+                                <button type="button" class="voice-btn" id="voice-input-btn" title="Start Voice Recording" onclick="toggleVoiceRecording()">
+                                    <span class="voice-icon">🎤</span>
+                                </button>
+                                <div class="voice-status" id="voice-status"></div>
+                            </div>
                         </div>
                     </div>
                     
@@ -257,13 +260,17 @@
                 </div>
             </div>
             
-            <div class="quick-voice-transcript" id="quick-voice-transcript">
-                Your voice input will appear here...
+            <div class="quick-voice-transcript-container">
+                <label for="quick-voice-transcript">Description <span style="color: #e53e3e;">*</span></label>
+                <textarea id="quick-voice-transcript" placeholder="Your voice input will appear here... You can also type or edit this text." rows="4"></textarea>
             </div>
             
             <div class="quick-voice-actions">
                 <button type="button" class="quick-voice-btn-large secondary" onclick="closeQuickVoiceModal()">Cancel</button>
-                <button type="button" class="quick-voice-btn-large" id="record-btn" onclick="toggleQuickVoiceRecording()">Start Recording</button>
+                <button type="button" class="quick-voice-btn-large" id="record-btn" onclick="toggleQuickVoiceRecording()">
+                    <span class="record-icon">🎤</span>
+                    <span class="record-text">Start Recording</span>
+                </button>
                 <button type="button" class="quick-voice-btn-large" id="save-btn" onclick="saveQuickVoiceEntry()" style="display: none;">Save Entry</button>
             </div>
         </div>

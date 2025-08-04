@@ -359,43 +359,64 @@ let isRecording = false;
 function initializeSpeechRecognition() {
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
         recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-        recognition.continuous = false;
-        recognition.interimResults = false;
+        recognition.continuous = true; // Enable continuous recording
+        recognition.interimResults = true; // Get interim results for better UX
         recognition.lang = 'en-US';
         
         recognition.onstart = function() {
             isRecording = true;
             const voiceBtn = document.getElementById('voice-input-btn');
+            const voiceStatus = document.getElementById('voice-status');
             if (voiceBtn) {
                 voiceBtn.classList.add('recording');
-                voiceBtn.textContent = '🔴';
+                voiceBtn.querySelector('.voice-icon').textContent = '🔴';
+                voiceBtn.title = 'Stop Voice Recording';
+            }
+            if (voiceStatus) {
+                voiceStatus.textContent = 'Listening...';
+                voiceStatus.classList.add('recording');
             }
             showNotification('Listening... Speak now!', 'info');
         };
         
         recognition.onresult = function(event) {
-            const transcript = event.results[0][0].transcript;
+            let finalTranscript = '';
+            let interimTranscript = '';
+            
+            // Combine all results for continuous recording
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                const transcript = event.results[i][0].transcript;
+                if (event.results[i].isFinal) {
+                    finalTranscript += transcript + ' ';
+                } else {
+                    interimTranscript += transcript;
+                }
+            }
             
             // Check if quick voice modal is open
             const quickModal = document.getElementById('quick-voice-modal');
             if (quickModal && quickModal.classList.contains('show')) {
-                // Update quick voice modal
-                quickVoiceTranscript = transcript;
-                document.getElementById('quick-voice-transcript').textContent = transcript;
-                document.getElementById('quick-voice-status').textContent = 'Voice input captured! Click "Save Entry" to save.';
-                document.getElementById('record-btn').style.display = 'none';
-                document.getElementById('save-btn').style.display = 'inline-block';
-                showNotification('Voice input captured!', 'success');
+                // Update quick voice modal with continuous transcript
+                if (finalTranscript) {
+                    quickVoiceTranscript = finalTranscript.trim();
+                    document.getElementById('quick-voice-transcript').value = quickVoiceTranscript;
+                } else if (interimTranscript) {
+                    // Show interim results while recording
+                    document.getElementById('quick-voice-transcript').value = quickVoiceTranscript + ' ' + interimTranscript;
+                }
             } else {
                 // Update regular modal
                 const descriptionField = document.getElementById('entry-description');
                 if (descriptionField) {
-                    descriptionField.value = transcript;
+                    if (finalTranscript) {
+                        descriptionField.value = finalTranscript.trim();
+                    } else if (interimTranscript) {
+                        descriptionField.value = descriptionField.value + ' ' + interimTranscript;
+                    }
                     // Trigger validation
-                    const event = new Event('input', { bubbles: true });
-                    descriptionField.dispatchEvent(event);
+                    const inputEvent = new Event('input', { bubbles: true });
+                    descriptionField.dispatchEvent(inputEvent);
                 }
-                showNotification('Voice input captured!', 'success');
             }
         };
         
@@ -407,9 +428,15 @@ function initializeSpeechRecognition() {
         recognition.onend = function() {
             isRecording = false;
             const voiceBtn = document.getElementById('voice-input-btn');
+            const voiceStatus = document.getElementById('voice-status');
             if (voiceBtn) {
                 voiceBtn.classList.remove('recording');
-                voiceBtn.textContent = '🎤';
+                voiceBtn.querySelector('.voice-icon').textContent = '🎤';
+                voiceBtn.title = 'Start Voice Recording';
+            }
+            if (voiceStatus) {
+                voiceStatus.textContent = '';
+                voiceStatus.classList.remove('recording');
             }
         };
     } else {
@@ -417,23 +444,51 @@ function initializeSpeechRecognition() {
     }
 }
 
-function startVoiceInput() {
+function toggleVoiceRecording() {
     if (!recognition) {
         showNotification('Voice recognition not supported in this browser', 'error');
         return;
     }
     
-    if (isRecording) {
-        recognition.stop();
-        return;
-    }
+    const voiceBtn = document.getElementById('voice-input-btn');
+    const voiceStatus = document.getElementById('voice-status');
     
-    try {
-        recognition.start();
-    } catch (error) {
-        console.error('Error starting speech recognition:', error);
-        showNotification('Error starting voice recognition', 'error');
+    if (isRecording) {
+        // Stop recording
+        recognition.stop();
+        if (voiceBtn) {
+            voiceBtn.classList.remove('recording');
+            voiceBtn.querySelector('.voice-icon').textContent = '🎤';
+            voiceBtn.title = 'Start Voice Recording';
+        }
+        if (voiceStatus) {
+            voiceStatus.textContent = '';
+            voiceStatus.classList.remove('recording');
+        }
+        showNotification('Voice recording stopped', 'info');
+    } else {
+        // Start recording
+        try {
+            recognition.start();
+            if (voiceBtn) {
+                voiceBtn.classList.add('recording');
+                voiceBtn.querySelector('.voice-icon').textContent = '🔴';
+                voiceBtn.title = 'Stop Voice Recording';
+            }
+            if (voiceStatus) {
+                voiceStatus.textContent = 'Recording...';
+                voiceStatus.classList.add('recording');
+            }
+        } catch (error) {
+            console.error('Error starting speech recognition:', error);
+            showNotification('Error starting voice recognition', 'error');
+        }
     }
+}
+
+// Keep the old function for backward compatibility
+function startVoiceInput() {
+    toggleVoiceRecording();
 }
 
 // Quick Voice Entry functionality
@@ -453,10 +508,15 @@ function startQuickVoiceEntry() {
     quickVoiceDate = today.toISOString().split('T')[0]; // YYYY-MM-DD format
     quickVoiceTranscript = '';
     
-    // Update modal content
-    document.getElementById('quick-voice-date').textContent = formattedDate;
-    document.getElementById('quick-voice-status').textContent = 'Fill in the details above, then click "Start Recording"';
-    document.getElementById('quick-voice-transcript').textContent = 'Your voice input will appear here...';
+                // Update modal content
+            document.getElementById('quick-voice-date').textContent = formattedDate;
+            document.getElementById('quick-voice-status').textContent = 'Fill in the details above, then click "Start Recording"';
+            document.getElementById('quick-voice-transcript').value = '';
+    
+    // Reset form
+    document.getElementById('quick-project').value = '';
+    document.getElementById('quick-task').value = '';
+    document.getElementById('quick-hours').value = '1.0';
     
     // Show modal
     document.getElementById('quick-voice-modal').classList.add('show');
@@ -479,18 +539,33 @@ function toggleQuickVoiceRecording() {
         return;
     }
     
-    if (isRecording) {
-        recognition.stop();
-        return;
-    }
+    const recordBtn = document.getElementById('record-btn');
+    const recordIcon = recordBtn.querySelector('.record-icon');
+    const recordText = recordBtn.querySelector('.record-text');
+    const statusElement = document.getElementById('quick-voice-status');
     
-    try {
-        recognition.start();
-        document.getElementById('quick-voice-status').textContent = 'Listening... Speak now!';
-        document.getElementById('record-btn').textContent = 'Stop Recording';
-    } catch (error) {
-        console.error('Error starting speech recognition:', error);
-        showNotification('Error starting voice recognition', 'error');
+    if (isRecording) {
+        // Stop recording
+        recognition.stop();
+        recordBtn.classList.remove('recording');
+        recordIcon.textContent = '🎤';
+        recordText.textContent = 'Start Recording';
+        statusElement.textContent = 'Voice input captured! Click "Save Entry" to save.';
+        document.getElementById('save-btn').style.display = 'inline-block';
+        showNotification('Recording stopped!', 'info');
+    } else {
+        // Start recording
+        try {
+            recognition.start();
+            recordBtn.classList.add('recording');
+            recordIcon.textContent = '🔴';
+            recordText.textContent = 'Stop Recording';
+            statusElement.textContent = 'Recording... Speak your complete description, then click "Stop Recording"';
+            showNotification('Recording started! Speak your complete description', 'info');
+        } catch (error) {
+            console.error('Error starting speech recognition:', error);
+            showNotification('Error starting voice recognition', 'error');
+        }
     }
 }
 
@@ -518,8 +593,11 @@ function saveQuickVoiceEntry() {
         return;
     }
     
-    if (!quickVoiceTranscript.trim()) {
-        showNotification('Please record a voice description', 'error');
+    // Get description from textarea (allows both voice and manual input)
+    const description = document.getElementById('quick-voice-transcript').value.trim();
+    if (!description) {
+        showNotification('Please enter a description (voice or manual)', 'error');
+        document.getElementById('quick-voice-transcript').focus();
         return;
     }
     
@@ -532,7 +610,7 @@ function saveQuickVoiceEntry() {
         project_id: projectId,
         task_id: taskId,
         hours: hours,
-        description: quickVoiceTranscript
+        description: description
     };
     
     // Save entry
